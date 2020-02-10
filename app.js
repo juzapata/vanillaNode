@@ -1,10 +1,12 @@
 const http = require('http');
 const fs = require('fs')
+
+
+
 const server = http.createServer((req, res) => {
     const url = req.url;
     const method = req.method;
     if (url === '/') {
-        console.log('esta na primeira rota');
         res.write(
             // o action dentro do form especifica para onde irá ser enviada a mensagem. Pode ser usada para outro website inclusive
             `<html>
@@ -19,7 +21,6 @@ const server = http.createServer((req, res) => {
         return res.end();
     }
     if (url === '/message' && method === 'POST'){
-        console.log('foi pra a segunda condição')
         // criação de event listener on() method
         const body = [];
         req.on('data', (chunk) => {
@@ -27,17 +28,18 @@ const server = http.createServer((req, res) => {
             console.log(chunk);
             body.push(chunk);
         }); 
-        req.on('end', () =>{
+        return req.on('end', () =>{
             // esse é o momento em que vamos fazer algo com os chunks para podermos trabalhar com eles, ou seja usar o Buffer
             const parsedBody = Buffer.concat(body).toString();
             const message = parsedBody.split('=')[1];
-            fs.writeFileSync('message.txt', message);
-            console.log(parsedBody);
+            //fs.writeFileSync('message.txt', message); // esse método vai bloquear execução de código até ser executado. 
+            fs.writeFile('message.txt', message, (err) =>{
+                // ele só vai terminar de mandar o request, assim que writeFile estiver pronta, por isso colocamos o resto do código abaixo, dentro do contexto desta função
+                res.statusCode = 302;
+                res.setHeader('Location', '/');
+                return res.end();
+            })
         });
-        res.statusCode = 302;
-        console.log('vai voltar para a primeira rota')
-        res.setHeader('Location', '/');
-        return res.end();
     }
     res.setHeader('Content-type', 'text/html');
     res.write(`<html>
